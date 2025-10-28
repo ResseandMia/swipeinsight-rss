@@ -1,0 +1,37 @@
+name: Generate RSS Feed
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 每天凌晨2点(UTC)运行，北京时间上午10点
+  workflow_dispatch:      # 允许手动触发
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: 安装依赖
+        run: |
+          npm init -y
+          npm install puppeteer feed
+      
+      - name: 运行爬虫
+        run: node scraper.js
+      
+      - name: 提交 RSS 文件
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add feed.xml
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🔄 Update RSS feed - $(date '+%Y-%m-%d %H:%M:%S')" && git push)
